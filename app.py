@@ -10,7 +10,7 @@ import seaborn as sns
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
-# --- 1. CLASSES CUSTOMIZADAS (Necessárias para carregar o modelo) ---
+# --- 1. CLASSES CUSTOMIZADAS ---
 class OrdinalFeature(BaseEstimator, TransformerMixin):
     def __init__(self, cols=['CAEC', 'CALC']):
         self.cols = cols
@@ -53,7 +53,7 @@ class MinMaxTransformer(BaseEstimator, TransformerMixin):
         X_copy[self.cols] = self.scaler.transform(X_copy[self.cols])
         return X_copy
 
-# --- 2. GERENCIAMENTO DE ESTADO (RESET DO FORMULÁRIO) ---
+# --- 2. GERENCIAMENTO DE ESTADO ---
 if 'form_id' not in st.session_state:
     st.session_state.form_id = 0
 
@@ -63,14 +63,13 @@ def reset_form():
 # --- 3. CONFIGURAÇÕES E CARREGAMENTO ---
 st.set_page_config(page_title="Diagnóstico via Modelo Preditivo", page_icon="⚖️", layout="wide")
 
-# Barra Lateral
 with st.sidebar:
     st.header("⚙️ Opções")
     if st.button("🔄 Limpar Tela / Nova Consulta"):
         reset_form()
         st.rerun()
     st.markdown("---")
-    st.info("Utilize este botão para zerar todos os campos do formulário.")
+    st.info("Clique acima para zerar o formulário.")
 
 @st.cache_resource
 def carregar_ativos():
@@ -98,37 +97,34 @@ map_features_pt = {
     'FCVC': 'Consumo de Vegetais', 'NCP': 'Nº de Refeições', 'CAEC': 'Comer entre Refeições',
     'SMOKE': 'Fumante', 'CH2O': 'Consumo de Água', 'SCC': 'Monitoramento de Calorias',
     'FAF': 'Atividade Física', 'TUE': 'Uso de Eletrônicos', 'CALC': 'Consumo de Álcool',
-    'IMC': 'IMC (Cálculo Biométrico)', 'MTRANS_Automobile': 'Transporte: Automóvel',
-    'MTRANS_Bike': 'Transporte: Bicicleta', 'MTRANS_Motorbike': 'Transporte: Moto',
-    'MTRANS_Public_Transportation': 'Transporte: Público', 'MTRANS_Walking': 'Transporte: Caminhada'
+    'IMC': 'IMC (Cálculo Biométrico)'
 }
 
 # --- 5. INTERFACE ---
 st.title("⚖️ Diagnóstico via Modelo Preditivo")
-st.markdown("Preencha os campos abaixo para obter uma análise baseada em hábitos e dados biométricos.")
+st.markdown("Preencha os dados abaixo. Passe o mouse sobre o **(?)** nos campos para ver as legendas.")
 
-# Uso de KEY dinâmica no formulário para permitir o RESET
 with st.form(key=f"main_form_{st.session_state.form_id}"):
     c1, c2, c3 = st.columns(3)
     with c1:
         st.subheader("📋 Perfil")
         genero_pt = st.selectbox("Gênero", ["Selecione..."] + list(map_genero.keys()))
         age = st.number_input("Idade", min_value=0, max_value=120, value=0)
-        height = st.number_input("Altura (m) - ex: 1.70", min_value=0.0, max_value=2.5, value=0.0, step=0.01)
+        height = st.number_input("Altura (m)", min_value=0.0, max_value=2.5, value=0.0, step=0.01)
         weight = st.number_input("Peso (kg)", min_value=0.0, max_value=300.0, value=0.0, step=0.1)
     
     with c2:
         st.subheader("🥗 Dieta e Hidratação")
         hist_familiar_pt = st.selectbox("Histórico familiar de sobrepeso?", ["Selecione..."] + list(map_sim_nao.keys()))
         favc_pt = st.selectbox("Consome alimentos calóricos com frequência?", ["Selecione..."] + list(map_sim_nao.keys()))
-        fcvc = st.slider("Consumo de vegetais (1-3)", 1, 3, 1)
-        ch2o = st.slider("Consumo de água (1-3)", 1, 3, 1)
+        fcvc = st.slider("Consumo de vegetais", 1, 3, 1, help="1: Raramente, 2: Às vezes, 3: Sempre")
+        ch2o = st.slider("Consumo de água", 1, 3, 1, help="1: <1L, 2: 1-2L, 3: >2L")
         caec_pt = st.selectbox("Lanches entre refeições?", ["Selecione..."] + list(map_frequencia.keys()))
 
     with c3:
         st.subheader("🏃 Estilo de Vida")
-        faf = st.slider("Atividade física (0-3)", 0, 3, 0)
-        tue = st.slider("Tempo de eletrônicos (0-2)", 0, 2, 0)
+        faf = st.slider("Atividade física", 0, 3, 0, help="0: Nenhuma, 1: 1-2 dias, 2: 3-4 dias, 3: 5 ou mais dias")
+        tue = st.slider("Tempo de eletrônicos", 0, 2, 0, help="0: 0-2h, 1: 3-5h, 2: >5h")
         smoke_pt = st.selectbox("Fumante?", ["Selecione..."] + list(map_sim_nao.keys()))
         calc_pt = st.selectbox("Consumo de álcool?", ["Selecione..."] + list(map_frequencia.keys()))
         mtrans_pt = st.selectbox("Meio de transporte", ["Selecione..."] + list(map_transporte.keys()))
@@ -157,39 +153,23 @@ if submit:
         res_en = ['Insufficient_Weight', 'Normal_Weight', 'Overweight_Level_I', 'Overweight_Level_II', 'Obesity_Type_I', 'Obesity_Type_II', 'Obesity_Type_III']
         res_final = map_resultados[res_en[pred_id]]
         
-        st.success(f"### Resultado do Modelo Preditivo: {res_final}")
+        st.success(f"### Resultado: {res_final}")
         st.info(f"IMC Calculado: {imc:.2f}")
 
-        # Botão de Download do Relatório
-        relatorio = f"""RELATÓRIO DE DIAGNÓSTICO PREDITIVO
---------------------------------------
-Resultado: {res_final}
-IMC: {imc:.2f}
-Idade: {age} anos
-Gênero: {genero_pt}
---------------------------------------
-Fatores principais: {faf} (Atividade Física), {fcvc} (Vegetais)
---------------------------------------
-"""
-        st.download_button(
-            label="📄 Baixar Relatório",
-            data=relatorio,
-            file_name=f"diagnostico_perfil.txt",
-            mime="text/plain"
-        )
+        # Relatório para Download
+        relatorio = f"DIAGNÓSTICO: {res_final}\nIMC: {imc:.2f}\nIdade: {age}\nGênero: {genero_pt}"
+        st.download_button("📄 Baixar Relatório", data=relatorio, file_name="diagnostico.txt")
 
-        # Gráfico IMC Referência
-        st.write("### 📊 Posicionamento no IMC (Referência OMS)")
-        faixas = {"Abaixo do Peso": 18.5, "Peso Normal": 24.9, "Sobrepeso": 29.9, "Obesidade": 40.0}
-        df_ref = pd.DataFrame(list(faixas.items()), columns=['Status', 'Limite'])
+        # Gráfico IMC
         fig_ref, ax_ref = plt.subplots(figsize=(10, 3))
-        sns.barplot(data=df_ref, x='Limite', y='Status', palette="coolwarm", ax=ax_ref)
-        ax_ref.axvline(imc, color='black', linestyle='--', linewidth=2, label=f'Seu IMC ({imc:.1f})')
+        faixas = {"Abaixo do Peso": 18.5, "Peso Normal": 24.9, "Sobrepeso": 29.9, "Obesidade": 40.0}
+        sns.barplot(x=list(faixas.values()), y=list(faixas.keys()), palette="coolwarm", ax=ax_ref)
+        ax_ref.axvline(imc, color='black', linestyle='--', label=f'Seu IMC ({imc:.1f})')
         plt.legend()
         st.pyplot(fig_ref)
 
         # Gráfico Importância
-        st.write("### 🔍 Fatores Determinantes para este Diagnóstico")
+        st.write("### 🔍 Fatores Determinantes")
         rf_model = pipeline.named_steps['model']
         features_final = pipeline.named_steps['cat'].transform(pipeline.named_steps['ord'].transform(X_user)).columns
         importancias = pd.Series(rf_model.feature_importances_, index=features_final)
