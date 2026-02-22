@@ -10,7 +10,7 @@ import seaborn as sns
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
-# --- 1. CLASSES CUSTOMIZADAS ---
+# --- 1. CLASSES CUSTOMIZADAS (Necessárias para carregar o modelo) ---
 class OrdinalFeature(BaseEstimator, TransformerMixin):
     def __init__(self, cols=['CAEC', 'CALC']):
         self.cols = cols
@@ -53,8 +53,24 @@ class MinMaxTransformer(BaseEstimator, TransformerMixin):
         X_copy[self.cols] = self.scaler.transform(X_copy[self.cols])
         return X_copy
 
-# --- 2. CONFIGURAÇÕES ---
+# --- 2. GERENCIAMENTO DE ESTADO (RESET DO FORMULÁRIO) ---
+if 'form_id' not in st.session_state:
+    st.session_state.form_id = 0
+
+def reset_form():
+    st.session_state.form_id += 1
+
+# --- 3. CONFIGURAÇÕES E CARREGAMENTO ---
 st.set_page_config(page_title="Diagnóstico via Modelo Preditivo", page_icon="⚖️", layout="wide")
+
+# Barra Lateral
+with st.sidebar:
+    st.header("⚙️ Opções")
+    if st.button("🔄 Limpar Tela / Nova Consulta"):
+        reset_form()
+        st.rerun()
+    st.markdown("---")
+    st.info("Utilize este botão para zerar todos os campos do formulário.")
 
 @st.cache_resource
 def carregar_ativos():
@@ -64,7 +80,7 @@ def carregar_ativos():
 
 pipeline, colunas_treino = carregar_ativos()
 
-# --- 3. MAPEAMENTOS ---
+# --- 4. MAPEAMENTOS ---
 map_genero = {"Masculino": "Male", "Feminino": "Female"}
 map_sim_nao = {"Sim": "yes", "Não": "no"}
 map_frequencia = {"Não consome": "no", "Às vezes": "Sometimes", "Frequentemente": "Frequently", "Sempre": "Always"}
@@ -87,14 +103,12 @@ map_features_pt = {
     'MTRANS_Public_Transportation': 'Transporte: Público', 'MTRANS_Walking': 'Transporte: Caminhada'
 }
 
-# --- 4. INTERFACE ---
+# --- 5. INTERFACE ---
 st.title("⚖️ Diagnóstico via Modelo Preditivo")
-st.markdown("""
-Esta ferramenta utiliza um **Modelo Preditivo** treinado com dados de pessoas entre **14 e 61 anos**. 
-Preencha os campos abaixo para obter uma análise baseada em hábitos e dados biométricos.
-""")
+st.markdown("Preencha os campos abaixo para obter uma análise baseada em hábitos e dados biométricos.")
 
-with st.form("main_form"):
+# Uso de KEY dinâmica no formulário para permitir o RESET
+with st.form(key=f"main_form_{st.session_state.form_id}"):
     c1, c2, c3 = st.columns(3)
     with c1:
         st.subheader("📋 Perfil")
@@ -107,14 +121,14 @@ with st.form("main_form"):
         st.subheader("🥗 Dieta e Hidratação")
         hist_familiar_pt = st.selectbox("Histórico familiar de sobrepeso?", ["Selecione..."] + list(map_sim_nao.keys()))
         favc_pt = st.selectbox("Consome alimentos calóricos com frequência?", ["Selecione..."] + list(map_sim_nao.keys()))
-        fcvc = st.slider("Consumo de vegetais (1-3)", 1, 3, 1, help="1:Raramente, 2:Às vezes, 3:Sempre")
-        ch2o = st.slider("Consumo de água (1-3)", 1, 3, 1, help="1:<1L, 2:1-2L, 3:>2L")
+        fcvc = st.slider("Consumo de vegetais (1-3)", 1, 3, 1)
+        ch2o = st.slider("Consumo de água (1-3)", 1, 3, 1)
         caec_pt = st.selectbox("Lanches entre refeições?", ["Selecione..."] + list(map_frequencia.keys()))
 
     with c3:
         st.subheader("🏃 Estilo de Vida")
-        faf = st.slider("Atividade física (0-3)", 0, 3, 0, help="0:Nenhuma, 1:1-2x, 2:3-4x, 3:5x ou +")
-        tue = st.slider("Tempo de eletrônicos (0-2)", 0, 2, 0, help="0:0-2h, 1:3-5h, 2:>5h")
+        faf = st.slider("Atividade física (0-3)", 0, 3, 0)
+        tue = st.slider("Tempo de eletrônicos (0-2)", 0, 2, 0)
         smoke_pt = st.selectbox("Fumante?", ["Selecione..."] + list(map_sim_nao.keys()))
         calc_pt = st.selectbox("Consumo de álcool?", ["Selecione..."] + list(map_frequencia.keys()))
         mtrans_pt = st.selectbox("Meio de transporte", ["Selecione..."] + list(map_transporte.keys()))
@@ -123,7 +137,7 @@ with st.form("main_form"):
 
     submit = st.form_submit_button("ANALISAR PERFIL")
 
-# --- 5. RESULTADOS ---
+# --- 6. RESULTADOS ---
 if submit:
     if "Selecione..." in [genero_pt, hist_familiar_pt, smoke_pt, favc_pt, caec_pt, scc_pt, calc_pt, mtrans_pt] or age == 0 or height == 0 or weight == 0:
         st.error("⚠️ Por favor, preencha todos os campos corretamente.")
@@ -146,7 +160,25 @@ if submit:
         st.success(f"### Resultado do Modelo Preditivo: {res_final}")
         st.info(f"IMC Calculado: {imc:.2f}")
 
-        # Gráfico IMC
+        # Botão de Download do Relatório
+        relatorio = f"""RELATÓRIO DE DIAGNÓSTICO PREDITIVO
+--------------------------------------
+Resultado: {res_final}
+IMC: {imc:.2f}
+Idade: {age} anos
+Gênero: {genero_pt}
+--------------------------------------
+Fatores principais: {faf} (Atividade Física), {fcvc} (Vegetais)
+--------------------------------------
+"""
+        st.download_button(
+            label="📄 Baixar Relatório",
+            data=relatorio,
+            file_name=f"diagnostico_perfil.txt",
+            mime="text/plain"
+        )
+
+        # Gráfico IMC Referência
         st.write("### 📊 Posicionamento no IMC (Referência OMS)")
         faixas = {"Abaixo do Peso": 18.5, "Peso Normal": 24.9, "Sobrepeso": 29.9, "Obesidade": 40.0}
         df_ref = pd.DataFrame(list(faixas.items()), columns=['Status', 'Limite'])
@@ -156,7 +188,7 @@ if submit:
         plt.legend()
         st.pyplot(fig_ref)
 
-        # Importância das Variáveis
+        # Gráfico Importância
         st.write("### 🔍 Fatores Determinantes para este Diagnóstico")
         rf_model = pipeline.named_steps['model']
         features_final = pipeline.named_steps['cat'].transform(pipeline.named_steps['ord'].transform(X_user)).columns
