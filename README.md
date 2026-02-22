@@ -29,6 +29,11 @@ Codificação Ordinal e One-Hot Encoding.
 
 Normalização com Min-Max Scaler.
 
+📖 Desenvolvimento e Documentação Técnica
+Para detalhes sobre a análise exploratória de dados (EDA), tratamento de outliers, comparação de algoritmos e métricas de validação (Acurácia, Precisão, Matriz de Confusão), acesse o notebook completo:
+
+Notebook de Treinamento: f4_tc_pipeline_ml_final.ipynb
+
 💻 Parte 2: Interface Streamlit (app.py)
 Para tornar o modelo acessível, criamos uma aplicação web interativa que permite realizar diagnósticos em tempo real.
 
@@ -69,4 +74,4 @@ Matplotlib & Seaborn: Visualização de gráficos.
 
 Streamlit: Framework para a aplicação web.
 
-Joblib: Persistência do modelo treinado.
+Joblib: Persistência do modelo e das colunas do pipeline.
