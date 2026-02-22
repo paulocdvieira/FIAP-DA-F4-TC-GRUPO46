@@ -1,6 +1,6 @@
-# FIAP-DA-F4-TC-GRUPO46
+# ⚖️ Modelo Preditivo de Diagnóstico de Obesidade
 
-⚖️ Modelo Preditivo de Diagnóstico de Obesidade
+
 Este repositório contém a solução desenvolvida para o Tech Challenge, focada na criação de um modelo de Machine Learning capaz de classificar níveis de obesidade com base em dados biométricos e hábitos de vida.
 
 🚀 Estrutura do Projeto
