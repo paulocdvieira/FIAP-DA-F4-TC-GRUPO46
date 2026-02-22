@@ -119,7 +119,6 @@ with st.form("main_form"):
         calc_pt = st.selectbox("Consumo de álcool?", ["Selecione..."] + list(map_frequencia.keys()))
         mtrans_pt = st.selectbox("Meio de transporte", ["Selecione..."] + list(map_transporte.keys()))
         scc_pt = st.selectbox("Monitora calorias?", ["Selecione..."] + list(map_sim_nao.keys()))
-        # NCP ajustado para iniciar no mínimo (1)
         ncp = st.slider("Refeições principais por dia", 1, 4, 1)
 
     submit = st.form_submit_button("ANALISAR PERFIL")
@@ -140,13 +139,11 @@ if submit:
         
         X_user = pd.DataFrame([dados])[colunas_treino]
         pred_id = pipeline.predict(X_user)[0]
-        probs = pipeline.predict_proba(X_user)[0]
         
         res_en = ['Insufficient_Weight', 'Normal_Weight', 'Overweight_Level_I', 'Overweight_Level_II', 'Obesity_Type_I', 'Obesity_Type_II', 'Obesity_Type_III']
         res_final = map_resultados[res_en[pred_id]]
         
         st.success(f"### Resultado do Modelo Preditivo: {res_final}")
-        st.metric("Confiança do Modelo", f"{probs[pred_id]*100:.1f}%")
         st.info(f"IMC Calculado: {imc:.2f}")
 
         # Gráfico IMC
