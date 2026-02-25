@@ -1,0 +1,3 @@
+Link Streamlit: Diagnóstico via Modelo preditivo
+
+https://fiap-da-f4-tc-grupo46-w9dekptdrmzgcagzwlzwfg.streamlit.app/
